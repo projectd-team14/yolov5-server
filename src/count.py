@@ -9,7 +9,9 @@ def main():
 
     spots_id_lis = [] 
     for i in range(len(camera_status)):
-        spots_id_lis.append(camera_status[i]['spots_id'])
+        if not camera_status[i]['spots_id'] in spots_id_lis:
+            spots_id_lis.append(camera_status[i]['spots_id'])
+            print("Spot ID" + str(camera_status[i]['spots_id']))
 
     # 1日(1時間に1回定期処理)
     for i2 in range(len(spots_id_lis)):
@@ -145,6 +147,6 @@ def time_cycle():
     while True:
         main()       
         print("update")
-        sleep(3600)
+        #sleep(3600)
 
 time_cycle()
