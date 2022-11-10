@@ -6,7 +6,6 @@ from fastapi import FastAPI
 import subprocess
 from subprocess import PIPE
 from time import sleep
-import mysql.connector
 from fastapi.responses import FileResponse
 
 app = FastAPI()
