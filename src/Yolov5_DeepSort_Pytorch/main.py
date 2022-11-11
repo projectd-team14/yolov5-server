@@ -74,6 +74,7 @@ def detect(opt):
     spots_time = id_lis[0]['spots_over_time'] 
 
     # 計測時間記録用
+    time_count = 0
     id_collect = []
     bicycle_lis = []
     delete = './bicycle_imgs/%s/' % camera_id
@@ -186,6 +187,7 @@ def detect(opt):
     model.warmup(imgsz=(1 if pt else nr_sources, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0, 0.0], 0
     for frame_idx, (path1, im, im0s, vid_cap, s) in enumerate(dataset):
+        time_count = time_count + 1
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.half() if half else im.float()  # uint8 to fp16/32
@@ -421,8 +423,10 @@ def detect(opt):
                 id_collect.clear()
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
-                # プログラムを止める  
-                #time.sleep(3600)  
+                # プログラムを止める
+                if time_count >= 3:  
+                    time.sleep(3600)  
+
             else:
                 deepsort_list[i].increment_ages()
                 LOGGER.info('No detections')
