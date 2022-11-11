@@ -451,7 +451,7 @@ def detect(opt):
                 # メンテナンス後は10回検出を行い画像を出力して修復処理を行う。その後平常字の処理に移行。
                 if server_condition == 'false':
                     if time_count >= 3:  
-                        time.sleep(0)
+                        time.sleep(1800)
                         print("平常時")
                 else:
                     if time_count >= 10:  
