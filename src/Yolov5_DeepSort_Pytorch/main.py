@@ -283,7 +283,6 @@ def detect(opt):
                     for j, (output) in enumerate(outputs[i]):
                         bboxes = output[0:4]
                         id = output[4]
-                        id2 = str(id)
                         cls = output[5]
                         conf = output[6]
                         for il in range(len(labels)):
