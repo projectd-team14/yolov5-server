@@ -79,6 +79,11 @@ def detect(opt):
     bicycle_lis = []
     delete = './bicycle_imgs/%s/' % camera_id
 
+    # メンテナンス及びサーバーダウン後かどうかの判定
+    url = 'http://host.docker.internal:8000/api/server_condition/%s' % camera_id
+    r = requests.get(url)
+    server_condition = r.json() 
+
     # ラベリングの配列
     url = 'http://host.docker.internal:8000/api/get_label/%s' % camera_id
     r = requests.get(url)
@@ -336,12 +341,20 @@ def detect(opt):
                                     request_lis.append(item_data)
                                 
                                 # 画像を保存
-                                is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
-                                if not is_file:
-                                    txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
-                                    file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
-                                    # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
-                                    save_one_box(bboxes, imc, file_path, BGR=True)
+                                if server_condition == 'false':
+                                    is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
+                                    if not is_file:
+                                        txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
+                                        file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
+                                        # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
+                                        save_one_box(bboxes, imc, file_path, BGR=True)
+                                else:
+                                    is_file = os.path.exists("./bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id)))
+                                    if not is_file:
+                                        txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
+                                        file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
+                                        # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
+                                        save_one_box(bboxes, imc, file_path, BGR=True)
 
                         if save_txt:
                             # to MOT format
@@ -405,6 +418,7 @@ def detect(opt):
                 r = requests.get(url)
                 last_lis = r.json()
                 delete_lis = []
+
                 for i5 in range(len(last_lis)):
                     if not last_lis[i5] in id_collect:
                         delete_lis.append(last_lis[i5])
