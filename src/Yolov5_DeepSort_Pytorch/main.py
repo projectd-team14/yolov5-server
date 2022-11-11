@@ -42,6 +42,12 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 import shutil
 
+# メンテナンス後の処理
+def fix(id_collect):
+    print(id_collect)
+    print("メンテナンス後の処理")
+
+# 停止ボタンによる処理
 def stop(camera_id):
     url = 'http://host.docker.internal:8000/api/get_camera_status/%s' % camera_id
     r = requests.get(url)
@@ -53,6 +59,7 @@ def stop(camera_id):
         shutil.rmtree('./bicycle_imgs/%s/' % camera_id)
         exit()
 
+# 検出
 def detect(opt):
     parser = argparse.ArgumentParser()  
     parser.add_argument('--source', type=str, default='0', help='source')
@@ -79,10 +86,11 @@ def detect(opt):
     bicycle_lis = []
     delete = './bicycle_imgs/%s/' % camera_id
 
-    # メンテナンス及びサーバーダウン後かどうかの判定
+    # メンテナンス後かどうかの判定
     url = 'http://host.docker.internal:8000/api/server_condition/%s' % camera_id
     r = requests.get(url)
     server_condition = r.json() 
+    server_condition = server_condition['condition']
 
     # ラベリングの配列
     url = 'http://host.docker.internal:8000/api/get_label/%s' % camera_id
@@ -215,7 +223,8 @@ def detect(opt):
         # Process detections
         for i, det in enumerate(pred):  # detections per image
             # 停止ボタンによる処理
-            stop(camera_id)
+            if server_condition == 'false':
+                stop(camera_id)
 
             seen += 1
             if webcam:  # nr_sources >= 1
@@ -255,12 +264,14 @@ def detect(opt):
                     a = f"{n_1} "#{'A'}{'s' * (n_1 > 1)}, "
                     cv2.putText(im0, "Bicycle : " + str(a), (20, 50), 0, 0, (71, 99, 255), 3)
                     # 自転車の混雑度を更新
-                    url = 'http://host.docker.internal:8000/api/get_camera_count/%s/%s' % (camera_id, a)
-                    r = requests.get(url)
-                    print("更新") 
+                    if server_condition == 'false':
+                        url = 'http://host.docker.internal:8000/api/get_camera_count/%s/%s' % (camera_id, a)
+                        r = requests.get(url)
+                        print("更新") 
 
                     # 停止ボタンによる処理
-                    stop(camera_id)
+                    if server_condition == 'false':
+                        stop(camera_id)
                     
                 xywhs = xyxy2xywh(det[:, 0:4])
                 confs = det[:, 4]
@@ -275,10 +286,11 @@ def detect(opt):
                 # draw boxes for visualization
                 if len(outputs[i]) > 0:
                     # 自転車の固有IDを検索(どのタイミングで入れるのかは検討)
-                    url = 'http://host.docker.internal:8000/api/get_id/%s' % camera_id
-                    r = requests.get(url)
-                    bicycle_lis = r.json()
-                    print(bicycle_lis)
+                    if server_condition == 'false':
+                        url = 'http://host.docker.internal:8000/api/get_id/%s' % camera_id
+                        r = requests.get(url)
+                        bicycle_lis = r.json()
+                        print(bicycle_lis)
 
                     # 違反リスト
                     violation_lis = []
@@ -352,8 +364,8 @@ def detect(opt):
                                     is_file = os.path.exists("./bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id)))
                                     if not is_file:
                                         txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
-                                        file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
-                                        # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
+                                        file_path = Path("./bicycle_imgs_fix/") / str(camera_id) / f'{int(id)}.jpg'
+                                        # file_path_json = "bicycle_imgs_fix/%s/%s" % (id_str,jpg)
                                         save_one_box(bboxes, imc, file_path, BGR=True)
 
                         if save_txt:
@@ -378,67 +390,77 @@ def detect(opt):
                             '''
 
                     # APIの処理を分離
-                    print(request_lis)
-                    url = 'http://host.docker.internal:8000/api/bicycle_update'
-                    item_data = request_lis
-                    r = requests.post(url, json=item_data)
-                    response_lis = r.json()
+                    if server_condition == 'false':
+                        print(request_lis)
+                        url = 'http://host.docker.internal:8000/api/bicycle_update'
+                        item_data = request_lis
+                        r = requests.post(url, json=item_data)
+                        response_lis = r.json()
 
-                    # APIから得られたステータスから違反リストを生成する
-                    for i2 in range(len(response_lis)):
-                        out_time = spots_time
-                        up = response_lis[i2]['updated_at']
-                        cr = response_lis[i2]['created_at']
-                        updated_at = datetime.datetime.fromisoformat(up[:-1])
-                        created_at = datetime.datetime.fromisoformat(cr[:-1])
-                        time_dif = updated_at - created_at
-                        time_total = time_dif.total_seconds() 
-                        print(time_total)
-                        id_collect.append(response_lis[i2]['get_id'])
-                        
-                        # 現在存在する自転車（ID）のみ違反車両にする
-                        if time_total >= out_time:
-                            if response_lis[i2]['bicycles_status'] == "None" or response_lis[i2]['bicycles_status'] == "無効":
-                                violation_lis.append(response_lis[i2]['get_id'])
+                        # APIから得られたステータスから違反リストを生成する
+                        for i2 in range(len(response_lis)):
+                            out_time = spots_time
+                            up = response_lis[i2]['updated_at']
+                            cr = response_lis[i2]['created_at']
+                            updated_at = datetime.datetime.fromisoformat(up[:-1])
+                            created_at = datetime.datetime.fromisoformat(cr[:-1])
+                            time_dif = updated_at - created_at
+                            time_total = time_dif.total_seconds() 
+                            print(time_total)
+                            id_collect.append(response_lis[i2]['get_id'])
+                            
+                            # 現在存在する自転車（ID）のみ違反車両にする
+                            if time_total >= out_time:
+                                if response_lis[i2]['bicycles_status'] == "None" or response_lis[i2]['bicycles_status'] == "無効":
+                                    violation_lis.append(response_lis[i2]['get_id'])
 
-                    # 違反車両を更新            
-                    url = 'http://host.docker.internal:8000/api/bicycle_violation'
-                    item_data = {
-                        "camera_id" : camera_id,
-                        "violation_list" : violation_lis
-                    }
-                    r = requests.post(url, json=item_data)
-                    print("新規違反リスト")
-                    print(violation_lis)
+                        # 違反車両を更新  
+                        url = 'http://host.docker.internal:8000/api/bicycle_violation'
+                        item_data = {
+                            "camera_id" : camera_id,
+                            "violation_list" : violation_lis
+                        }
+                        r = requests.post(url, json=item_data)
+                        print("新規違反リスト")
+                        print(violation_lis)
 
                 print('現在のトラッキング')
                 print(id_collect) 
 
-                url = 'http://host.docker.internal:8000/api/get_id/%s' % camera_id
-                r = requests.get(url)
-                last_lis = r.json()
-                delete_lis = []
+                if server_condition == 'false':
+                    url = 'http://host.docker.internal:8000/api/get_id/%s' % camera_id
+                    r = requests.get(url)
+                    last_lis = r.json()
+                    delete_lis = []
 
-                for i5 in range(len(last_lis)):
-                    if not last_lis[i5] in id_collect:
-                        delete_lis.append(last_lis[i5])
-                        trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, last_lis[i5])
-                        if os.path.exists(str(trimming_path)):
-                            os.remove(trimming_path)
+                    for i5 in range(len(last_lis)):
+                        if not last_lis[i5] in id_collect:
+                            delete_lis.append(last_lis[i5])
+                            trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, last_lis[i5])
+                            if os.path.exists(str(trimming_path)):
+                                os.remove(trimming_path)
 
-                url = 'http://host.docker.internal:8000/api/bicycle_delete/%s' % camera_id
-                item_data = {
-                    "delete_list" : delete_lis
-                }
-                r = requests.post(url, json=item_data)
+                    url = 'http://host.docker.internal:8000/api/bicycle_delete/%s' % camera_id
+                    item_data = {
+                        "delete_list" : delete_lis
+                    }
+                    r = requests.post(url, json=item_data)
 
-                bicycle_lis.clear()
-                id_collect.clear()
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
-                # プログラムを止める
-                if time_count >= 3:  
-                    time.sleep(3600)  
+                # メンテナンス後は10回検出を行い画像を出力して修復処理を行う。その後平常字の処理に移行。
+                if server_condition == 'false':
+                    if time_count >= 3:  
+                        time.sleep(0)
+                        print("平常時")
+                else:
+                    if time_count >= 10:  
+                        server_condition = 'false'
+                        fix(id_collect)
+                
+                bicycle_lis.clear()
+                if server_condition == 'false':
+                    id_collect.clear()
 
             else:
                 deepsort_list[i].increment_ages()

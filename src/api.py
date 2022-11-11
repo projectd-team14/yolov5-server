@@ -13,13 +13,10 @@ app = FastAPI()
 # 検出処理を開始
 @app.get("/detect/")
 async def root(id: int = 0, status: int = 0):
-    if status == 0:
-        url = 'http://host.docker.internal:8000/api/get_url/%s' % id
-        r = requests.get(url)
-        camera_url = r.json() 
-        subprocess.Popen('python ./Yolov5_DeepSort_Pytorch/main.py --save-crop --source "%s" --camera_id %s --yolo_model ./Yolov5_DeepSort_Pytorch/model_weight/best.pt' % (camera_url[0]['cameras_url'], int(id)), shell=True)
-    else:
-        subprocess.Popen('python fix.py %s' % id, shell=True)
+    url = 'http://host.docker.internal:8000/api/get_url/%s' % id
+    r = requests.get(url)
+    camera_url = r.json() 
+    subprocess.Popen('python ./Yolov5_DeepSort_Pytorch/main.py --save-crop --source "%s" --camera_id %s --yolo_model ./Yolov5_DeepSort_Pytorch/model_weight/best.pt' % (camera_url[0]['cameras_url'], int(id)), shell=True)
         
 # ラベル付け設定
 @app.get("/label/")
@@ -30,7 +27,7 @@ async def label(id: int = 0):
 
     dir_path = './label_imgs'
     ext = 'jpg'
-
+    
     if os.path.isfile('./label_imgs/%s.jpg' % id):
         os.remove('./label_imgs/%s.jpg' % id)
 
