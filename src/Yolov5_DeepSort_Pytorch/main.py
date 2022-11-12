@@ -41,11 +41,36 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 import shutil
+from PIL import Image 
+import imagehash 
 
-# メンテナンス後の処理
-def fix(id_collect):
-    print(id_collect)
-    print("メンテナンス後の処理")
+# メンテナンス後の処理(トリミング画像の類似度を比較してYOLOv5用のIDを更新する)
+def fix(camera_id):
+    bicycle_ex_lis = []
+    fix_path = "./bicycle_imgs_fix/%s" % camera_id
+    fix_files = os.listdir(fix_path)
+    old_path = "./bicycle_imgs/%s" % camera_id
+    old_files = os.listdir(old_path)
+
+    for i in range(len(fix_files)):
+        for i2 in range(len(old_files)):
+            hash = imagehash.average_hash(Image.open('./bicycle_imgs_fix/%s/%s' % (camera_id, fix_files[i]))) 
+            otherhash = imagehash.average_hash(Image.open('./bicycle_imgs/%s/%s' % (camera_id, old_files[i2])))
+            threshold = hash - otherhash
+            if threshold <= 15:
+                old = old_files[i2].replace('.jpg', '')
+                new = fix_files[i].replace('jpg', '')
+                update_lis = {
+                    'old' : old,
+                    'new' : new
+                }
+                bicycle_ex_lis.append(update_lis)
+
+    url = 'http://host.docker.internal:8000/api/server_update/%s' % camera_id
+    item_data = bicycle_ex_lis
+    r = requests.post(url, json=item_data)
+    shutil.rmtree(fix_path)
+    shutil.rmtree(old_path)
 
 # 停止ボタンによる処理
 def stop(camera_id):
@@ -451,12 +476,12 @@ def detect(opt):
                 # メンテナンス後は10回検出を行い画像を出力して修復処理を行う。その後平常字の処理に移行。
                 if server_condition == 'false':
                     if time_count >= 3:  
-                        time.sleep(1800)
+                        # time.sleep(1800)
                         print("平常時")
                 else:
                     if time_count >= 10:  
                         server_condition = 'false'
-                        fix(id_collect)
+                        fix(camera_id)
                 
                 bicycle_lis.clear()
                 if server_condition == 'false':
