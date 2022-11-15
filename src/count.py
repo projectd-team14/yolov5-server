@@ -1,9 +1,14 @@
 from time import sleep
 import requests
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+URL = os.environ['LARAVEL_URL']
 
 def main():
     # 駐輪場
-    url = 'http://host.docker.internal:8000/api/get_camera_all'
+    url = '%s/api/get_camera_all' % URL
     r = requests.get(url)
     camera_status = r.json()
 
@@ -21,7 +26,7 @@ def main():
             if camera_status[i3]['spots_id'] == spots_id_lis[i2]:
                 count_day1 = count_day1 + int(camera_status[i3]['cameras_count'])
 
-        url = 'http://host.docker.internal:8000/api/get_spot_day1/%s' % spots_id_lis[i2]
+        url = '%s/api/get_spot_day1/%s' % (URL, spots_id_lis[i2])
         r = requests.get(url)
         spot_day1 = r.json()
 
@@ -32,7 +37,7 @@ def main():
         else:
             new_day1 = ("%s,%s" % (day1,str(count_day1)))
 
-        url = 'http://host.docker.internal:8000/api/get_spot_day1_update/%s' % spots_id_lis[i2]
+        url = '%s/api/get_spot_day1_update/%s' % (URL, spots_id_lis[i2])
         item_data = {
             "spots_count_day1" : new_day1
         }
@@ -41,7 +46,7 @@ def main():
         # 25時間目の処理
         print(len(db_day_lis) + 1)
         if len(db_day_lis) >= 24:
-            url = 'http://host.docker.internal:8000/api/get_spot_day1_update/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_day1_update/%s' % (URL, spots_id_lis[i2])
             item_data = {
                 "spots_count_day1" : str(count_day1)
             }
@@ -50,7 +55,7 @@ def main():
             day_ave = sum([int(s) for s in db_day_lis])/len(db_day_lis)
             print("day1を更新")
             # 1週間(1日の平均を7日間)
-            url = 'http://host.docker.internal:8000/api/get_spot_week1/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_week1/%s' % (URL, spots_id_lis[i2])
             r = requests.get(url)
             spot_week1 = r.json()
 
@@ -61,7 +66,7 @@ def main():
             else:
                 new_week1 = ("%s,%s" % (db_week1,str(day_ave)))
 
-            url = 'http://host.docker.internal:8000/api/get_spot_week1_update/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_week1_update/%s' % (URL, spots_id_lis[i2])
             item_data = {
                 "spots_count_week1" : new_week1
             }
@@ -72,7 +77,7 @@ def main():
                 db_week_lis.append(str(day_ave))
                 new_week_lis = ",".join(db_week_lis)
                 new_week1 = ("%s" % (new_week_lis))
-                url = 'http://host.docker.internal:8000/api/get_spot_week1_update/%s' % spots_id_lis[i2]
+                url = '%s/api/get_spot_week1_update/%s' % (URL, spots_id_lis[i2])
                 item_data = {
                     "spots_count_week1" : new_week1
                 }
@@ -80,7 +85,7 @@ def main():
                 print("weekを更新") 
 
             # 1か月(30日間で固定)
-            url = 'http://host.docker.internal:8000/api/get_spot_month1/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_month1/%s' % (URL, spots_id_lis[i2])
             r = requests.get(url)
             spot_month1 = r.json()
 
@@ -91,7 +96,7 @@ def main():
             else:
                 new_month1 = ("%s,%s" % (db_month1,str(day_ave)))
 
-            url = 'http://host.docker.internal:8000/api/get_spot_month1_update/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_month1_update/%s' % (URL, spots_id_lis[i2])
             item_data = {
                 "spots_count_month1" : new_month1
             }
@@ -103,7 +108,7 @@ def main():
                 db_month1_lis.append(str(day_ave))
                 new_month1_lis = ",".join(db_month1_lis)
                 new_month1 = ("%s" % (new_month1_lis))
-                url = 'http://host.docker.internal:8000/api/get_spot_month1_update/%s' % spots_id_lis[i2]
+                url = '%s/api/get_spot_month1_update/%s' % (URL, spots_id_lis[i2])
                 item_data = {
                     "spots_count_month1" : new_month1
                 }
@@ -111,7 +116,7 @@ def main():
                 print("month1を更新")
 
             # 3か月(90日間で固定)
-            url = 'http://host.docker.internal:8000/api/get_spot_month3/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_month3/%s' % (URL, spots_id_lis[i2])
             r = requests.get(url)
             spot_month3 = r.json()
 
@@ -121,7 +126,7 @@ def main():
                 new_month3 = ("%s" % str(day_ave))
             else:
                 new_month3 = ("%s,%s" % (db_month3,str(day_ave)))
-            url = 'http://host.docker.internal:8000/api/get_spot_month3_update/%s' % spots_id_lis[i2]
+            url = '%s/api/get_spot_month3_update/%s' % (URL, spots_id_lis[i2])
             item_data = {
                 "spots_count_month3" : new_month3
             }
@@ -134,7 +139,7 @@ def main():
                 new_month3_lis = ",".join(db_month3_lis)
                 new_month3 = ("%s" % (new_month3_lis))
 
-                url = 'http://host.docker.internal:8000/api/get_spot_month3_update/%s' % spots_id_lis[i2]
+                url = '%s/api/get_spot_month3_update/%s' % (URL, spots_id_lis[i2])
                 item_data = {
                     "spots_count_month3" : new_month3
                 }

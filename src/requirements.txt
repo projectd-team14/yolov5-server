@@ -42,3 +42,4 @@ mysql-connector-python
 youtube_dl
 datetime
 ImageHash
+python-dotenv

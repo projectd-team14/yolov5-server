@@ -43,6 +43,10 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 import shutil
 from PIL import Image 
 import imagehash 
+from dotenv import load_dotenv
+load_dotenv()
+
+URL = os.environ['LARAVEL_URL']
 
 # メンテナンス後の処理(トリミング画像の類似度を比較してYOLOv5用のIDを更新する)
 def fix(camera_id):
@@ -66,7 +70,7 @@ def fix(camera_id):
                 }
                 bicycle_ex_lis.append(update_lis)
 
-    url = 'http://host.docker.internal:8000/api/server_update/%s' % camera_id
+    url = '%s/api/server_update/%s' % (URL, camera_id)
     item_data = bicycle_ex_lis
     r = requests.post(url, json=item_data)
     shutil.rmtree(fix_path)
@@ -74,11 +78,11 @@ def fix(camera_id):
 
 # 停止ボタンによる処理
 def stop(camera_id):
-    url = 'http://host.docker.internal:8000/api/get_camera_status/%s' % camera_id
+    url = '%s/api/get_camera_status/%s' % (URL, camera_id)
     r = requests.get(url)
     camera_status = r.json()
     if 'Stop' in camera_status[0]['cameras_status']:
-        url = 'http://host.docker.internal:8000/api/get_camera_stop/%s' % camera_id
+        url = '%s/api/get_camera_stop/%s' % (URL, camera_id)
         r = requests.get(url)                  
         shutil.rmtree('Yolov5_DeepSort_Pytorch/runs/track/')
         shutil.rmtree('./bicycle_imgs/%s/' % camera_id)
@@ -99,7 +103,7 @@ def detect(opt):
     camera_id = args.camera_id
     camera_id = int(camera_id)
     # 設定時間
-    url = 'http://host.docker.internal:8000/api/over_time/%s' % camera_id
+    url = '%s/api/over_time/%s' % (URL, camera_id)
     r = requests.get(url)
     id_lis = r.json() 
     spots_id = id_lis[0]['spots_id']
@@ -112,13 +116,13 @@ def detect(opt):
     delete = './bicycle_imgs/%s/' % camera_id
 
     # メンテナンス後かどうかの判定
-    url = 'http://host.docker.internal:8000/api/server_condition/%s' % camera_id
+    url = '%s/api/server_condition/%s' % (URL, camera_id)
     r = requests.get(url)
     server_condition = r.json() 
     server_condition = server_condition['condition']
 
     # ラベリングの配列
-    url = 'http://host.docker.internal:8000/api/get_label/%s' % camera_id
+    url = '%s/api/get_label/%s' % (URL, camera_id)
     r = requests.get(url)
     label_lis = r.json() 
     
@@ -290,7 +294,7 @@ def detect(opt):
                     cv2.putText(im0, "Bicycle : " + str(a), (20, 50), 0, 0, (71, 99, 255), 3)
                     # 自転車の混雑度を更新
                     if server_condition == 'false':
-                        url = 'http://host.docker.internal:8000/api/get_camera_count/%s/%s' % (camera_id, a)
+                        url = '%s/api/get_camera_count/%s/%s' % (URL, camera_id, a)
                         r = requests.get(url)
                         print("更新") 
 
@@ -312,7 +316,7 @@ def detect(opt):
                 if len(outputs[i]) > 0:
                     # 自転車の固有IDを検索(どのタイミングで入れるのかは検討)
                     if server_condition == 'false':
-                        url = 'http://host.docker.internal:8000/api/get_id/%s' % camera_id
+                        url = '%s/api/get_id/%s' % (URL, camera_id)
                         r = requests.get(url)
                         bicycle_lis = r.json()
                         print(bicycle_lis)
@@ -417,7 +421,7 @@ def detect(opt):
                     # APIの処理を分離
                     if server_condition == 'false':
                         print(request_lis)
-                        url = 'http://host.docker.internal:8000/api/bicycle_update'
+                        url = '%s/api/bicycle_update' % URL
                         item_data = request_lis
                         r = requests.post(url, json=item_data)
                         response_lis = r.json()
@@ -440,7 +444,7 @@ def detect(opt):
                                     violation_lis.append(response_lis[i2]['get_id'])
 
                         # 違反車両を更新  
-                        url = 'http://host.docker.internal:8000/api/bicycle_violation'
+                        url = '%s/api/bicycle_violation' % URL
                         item_data = {
                             "camera_id" : camera_id,
                             "violation_list" : violation_lis
@@ -453,7 +457,7 @@ def detect(opt):
                 print(id_collect) 
 
                 if server_condition == 'false':
-                    url = 'http://host.docker.internal:8000/api/get_id/%s' % camera_id
+                    url = '%s/api/get_id/%s' % (URL, camera_id)
                     r = requests.get(url)
                     last_lis = r.json()
                     delete_lis = []
@@ -465,7 +469,7 @@ def detect(opt):
                             if os.path.exists(str(trimming_path)):
                                 os.remove(trimming_path)
 
-                    url = 'http://host.docker.internal:8000/api/bicycle_delete/%s' % camera_id
+                    url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
                     item_data = {
                         "delete_list" : delete_lis
                     }

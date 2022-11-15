@@ -7,13 +7,16 @@ import subprocess
 from subprocess import PIPE
 from time import sleep
 from fastapi.responses import FileResponse
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI()
+URL = os.environ['LARAVEL_URL']
 
 # 検出処理を開始
 @app.get("/detect/")
 async def root(id: int = 0, status: int = 0):
-    url = 'http://host.docker.internal:8000/api/get_url/%s' % id
+    url = '%s/api/get_url/%s' % (URL, id)
     r = requests.get(url)
     camera_url = r.json() 
     subprocess.Popen('python ./Yolov5_DeepSort_Pytorch/main.py --save-crop --source "%s" --camera_id %s --yolo_model ./Yolov5_DeepSort_Pytorch/model_weight/best.pt' % (camera_url[0]['cameras_url'], int(id)), shell=True)
@@ -21,7 +24,7 @@ async def root(id: int = 0, status: int = 0):
 # ラベル付け設定
 @app.get("/label/")
 async def label(id: int = 0):
-    url = 'http://host.docker.internal:8000/api/get_url/%s' % id
+    url = '%s/api/get_url/%s' % (URL, id)
     r = requests.get(url)
     camera_url = r.json() 
 
@@ -53,7 +56,7 @@ async def bicycle(camera_id: int = 0, bicycle_id: int = 0):
 # テスト
 @app.get("/test/")
 async def bicycle():
-    url = 'http://host.docker.internal:8000/api/get_url/100'
+    url = '%s/api/get_url/100' % URL
     r = requests.get(url)
     camera_url = r.json()
 
