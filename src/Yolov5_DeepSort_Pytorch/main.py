@@ -88,6 +88,13 @@ def stop(camera_id):
         shutil.rmtree('./bicycle_imgs/%s/' % camera_id)
         exit()
 
+# 定期実行、DBの情報を更新するタイミングを決める
+def time_cycle(count_cycle):
+    if count_cycle > 5:
+        return True
+    else:
+        return False
+
 # 検出
 def detect(opt):
     parser = argparse.ArgumentParser()  
@@ -110,6 +117,8 @@ def detect(opt):
     spots_time = id_lis[0]['spots_over_time'] 
 
     # 計測時間記録用
+    update_cycle = False
+    count_cycle = 0
     time_count = 0
     id_collect = []
     bicycle_lis = []
@@ -294,9 +303,9 @@ def detect(opt):
                     cv2.putText(im0, "Bicycle : " + str(a), (20, 50), 0, 0, (71, 99, 255), 3)
                     # 自転車の混雑度を更新
                     if server_condition == 'false':
-                        url = '%s/api/get_camera_count/%s/%s' % (URL, camera_id, a)
-                        r = requests.get(url)
-                        print("更新") 
+                        if update_cycle:
+                            url = '%s/api/get_camera_count/%s/%s' % (URL, camera_id, a)
+                            r = requests.get(url)
 
                     # 停止ボタンによる処理
                     if server_condition == 'false':
@@ -316,15 +325,15 @@ def detect(opt):
                 if len(outputs[i]) > 0:
                     # 自転車の固有IDを検索(どのタイミングで入れるのかは検討)
                     if server_condition == 'false':
-                        url = '%s/api/get_id/%s' % (URL, camera_id)
-                        r = requests.get(url)
-                        bicycle_lis = r.json()
-                        print(bicycle_lis)
+                        if update_cycle:
+                            url = '%s/api/get_id/%s' % (URL, camera_id)
+                            r = requests.get(url)
+                            bicycle_lis = r.json()
+                            print(bicycle_lis)
 
-                    # 違反リスト
                     violation_lis = []
                     request_lis = []
-                    request_count = 0
+                    tracking_lis = []
 
                     for j, (output) in enumerate(outputs[i]):
                         bboxes = output[0:4]
@@ -356,31 +365,34 @@ def detect(opt):
                             XY_out = polygon.contains_point([X_out, Y_out])
 
                             if XY_out:
-                                # リクエスト内容を作成
-                                request_count = request_count + 1
-                                if not id in bicycle_lis:
-                                    item_data = {
-                                        "type" : "insert",
-                                        "spots_id" : spots_id,
-                                        "cameras_id" : camera_id,
-                                        "labels_name" : label_name, 
-                                        "get_id" : id_out,
-                                        "bicycles_x_coordinate" : X_out,
-                                        "bicycles_y_coordinate" : Y_out,
-                                    }
-                                    request_lis.append(item_data)
-                                elif id in bicycle_lis:
-                                    item_data = {
-                                        "type" : "update",
-                                        "spots_id" : spots_id,
-                                        "cameras_id" : camera_id,
-                                        "labels_name" : label_name, 
-                                        "get_id" : id_out,
-                                        "bicycles_x_coordinate" : X_out,
-                                        "bicycles_y_coordinate" : Y_out,
-                                    }
-                                    request_lis.append(item_data)
+                                if update_cycle:
+                                    # リクエスト内容を作成
+                                    if not id in bicycle_lis:
+                                        item_data = {
+                                            "type" : "insert",
+                                            "spots_id" : spots_id,
+                                            "cameras_id" : camera_id,
+                                            "labels_name" : label_name, 
+                                            "get_id" : id_out,
+                                            "bicycles_x_coordinate" : X_out,
+                                            "bicycles_y_coordinate" : Y_out,
+                                        }
+                                        request_lis.append(item_data)
+                                    elif id in bicycle_lis:
+                                        item_data = {
+                                            "type" : "update",
+                                            "spots_id" : spots_id,
+                                            "cameras_id" : camera_id,
+                                            "labels_name" : label_name, 
+                                            "get_id" : id_out,
+                                            "bicycles_x_coordinate" : X_out,
+                                            "bicycles_y_coordinate" : Y_out,
+                                        }
+                                        request_lis.append(item_data)
                                 
+                                if not id in tracking_lis:
+                                    tracking_lis.append(id)
+
                                 # 画像を保存
                                 if server_condition == 'false':
                                     is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
@@ -418,75 +430,84 @@ def detect(opt):
                                 save_one_box(bboxes, imc, file=save_imgs / 'crops' / txt_file_name / names[c] / f'{id}' / f'{p.stem}.jpg', BGR=True)                            
                             '''
 
-                    # APIの処理を分離
+                    # APIの処理
                     if server_condition == 'false':
-                        print(request_lis)
-                        url = '%s/api/bicycle_update' % URL
-                        item_data = request_lis
-                        r = requests.post(url, json=item_data)
-                        response_lis = r.json()
+                        if update_cycle:
+                            # print(request_lis)
+                            url = '%s/api/bicycle_update' % URL
+                            item_data = request_lis
+                            r = requests.post(url, json=item_data)
+                            response_lis = r.json()
 
-                        # APIから得られたステータスから違反リストを生成する
-                        for i2 in range(len(response_lis)):
-                            out_time = spots_time
-                            up = response_lis[i2]['updated_at']
-                            cr = response_lis[i2]['created_at']
-                            updated_at = datetime.datetime.fromisoformat(up[:-1])
-                            created_at = datetime.datetime.fromisoformat(cr[:-1])
-                            time_dif = updated_at - created_at
-                            time_total = time_dif.total_seconds() 
-                            print(time_total)
-                            id_collect.append(response_lis[i2]['get_id'])
-                            
-                            # 現在存在する自転車（ID）のみ違反車両にする
-                            if time_total >= out_time:
-                                if response_lis[i2]['bicycles_status'] == "None" or response_lis[i2]['bicycles_status'] == "無効":
-                                    violation_lis.append(response_lis[i2]['get_id'])
+                            # APIから得られたステータスから違反リストを生成する
+                            for i2 in range(len(response_lis)):
+                                out_time = spots_time
+                                up = response_lis[i2]['updated_at']
+                                cr = response_lis[i2]['created_at']
+                                updated_at = datetime.datetime.fromisoformat(up[:-1])
+                                created_at = datetime.datetime.fromisoformat(cr[:-1])
+                                time_dif = updated_at - created_at
+                                time_total = time_dif.total_seconds() 
+                                id_collect.append(response_lis[i2]['get_id'])
+                                
+                                # 現在存在する自転車（ID）のみ違反車両にする
+                                if time_total >= out_time:
+                                    if response_lis[i2]['bicycles_status'] == "None" or response_lis[i2]['bicycles_status'] == "無効":
+                                        violation_lis.append(response_lis[i2]['get_id'])
 
-                        # 違反車両を更新  
-                        url = '%s/api/bicycle_violation' % URL
-                        item_data = {
-                            "camera_id" : camera_id,
-                            "violation_list" : violation_lis
-                        }
-                        r = requests.post(url, json=item_data)
-                        print("新規違反リスト")
-                        print(violation_lis)
+                            # 違反車両を更新  
+                            url = '%s/api/bicycle_violation' % URL
+                            item_data = {
+                                "camera_id" : camera_id,
+                                "violation_list" : violation_lis
+                            }
+                            r = requests.post(url, json=item_data)
+                            print("新規違反リスト")
+                            print(violation_lis)
 
-                print('現在のトラッキング')
-                print(id_collect) 
+                    print('トラッキングリスト')
+                    print(tracking_lis) 
+                    
+                print('DB更新リスト')
+                print(id_collect)
 
                 if server_condition == 'false':
-                    url = '%s/api/get_id/%s' % (URL, camera_id)
-                    r = requests.get(url)
-                    last_lis = r.json()
-                    delete_lis = []
+                    if update_cycle:
+                        url = '%s/api/get_id/%s' % (URL, camera_id)
+                        r = requests.get(url)
+                        last_lis = r.json()
+                        delete_lis = []
 
-                    for i5 in range(len(last_lis)):
-                        if not last_lis[i5] in id_collect:
-                            delete_lis.append(last_lis[i5])
-                            trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, last_lis[i5])
-                            if os.path.exists(str(trimming_path)):
-                                os.remove(trimming_path)
+                        for i5 in range(len(last_lis)):
+                            if not last_lis[i5] in id_collect:
+                                delete_lis.append(last_lis[i5])
+                                trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, last_lis[i5])
+                                if os.path.exists(str(trimming_path)):
+                                    os.remove(trimming_path)
 
-                    url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
-                    item_data = {
-                        "delete_list" : delete_lis
-                    }
-                    r = requests.post(url, json=item_data)
+                        url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
+                        item_data = {
+                            "delete_list" : delete_lis
+                        }
+                        r = requests.post(url, json=item_data)
 
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
                 # メンテナンス後は10回検出を行い画像を出力して修復処理を行う。その後平常字の処理に移行。
                 if server_condition == 'false':
                     if time_count >= 3:  
-                        # time.sleep(1800)
                         print("平常時")
                 else:
                     if time_count >= 10:  
                         server_condition = 'false'
                         fix(camera_id)
                 
+                # DBの更新タイミングを調整。戻り値がTrueの場合に基盤サーバーにリクエストを送る。
+                count_cycle = count_cycle + 1
+                update_cycle = time_cycle(count_cycle)
+                if update_cycle:
+                    count_cycle = 0
+
                 bicycle_lis.clear()
                 if server_condition == 'false':
                     id_collect.clear()
