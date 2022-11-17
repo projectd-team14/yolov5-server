@@ -262,7 +262,8 @@ def detect(opt):
         for i, det in enumerate(pred):  # detections per image
             # 停止ボタンによる処理
             if server_condition == 'false':
-                stop(camera_id)
+                if update_cycle:
+                    stop(camera_id)
 
             seen += 1
             if webcam:  # nr_sources >= 1
@@ -309,7 +310,8 @@ def detect(opt):
 
                     # 停止ボタンによる処理
                     if server_condition == 'false':
-                        stop(camera_id)
+                        if update_cycle:
+                            stop(camera_id)
                     
                 xywhs = xyxy2xywh(det[:, 0:4])
                 confs = det[:, 4]
