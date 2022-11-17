@@ -495,7 +495,7 @@ def detect(opt):
 
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
-                # メンテナンス後は10回検出を行い画像を出力して修復処理を行う。その後平常字の処理に移行。
+                # メンテナンス後は10回検出を行い画像を出力して修復処理を行う、その後平常処理に移行
                 if server_condition == 'false':
                     if time_count >= 3:  
                         print("平常時")
@@ -504,7 +504,7 @@ def detect(opt):
                         server_condition = 'false'
                         fix(camera_id)
                 
-                # DBの更新タイミングを調整。戻り値がTrueの場合に基盤サーバーにリクエストを送る。
+                # DBの更新タイミングを調整、戻り値がTrueの場合に基盤サーバーにリクエストを送る
                 count_cycle = count_cycle + 1
                 update_cycle = time_cycle(count_cycle)
                 if update_cycle:
