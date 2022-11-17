@@ -325,7 +325,7 @@ def detect(opt):
 
                 # draw boxes for visualization
                 if len(outputs[i]) > 0:
-                    # 自転車の固有IDを検索(どのタイミングで入れるのかは検討)
+                    # 自転車の固有IDを検索
                     if server_condition == 'false':
                         if update_cycle:
                             url = '%s/api/get_id/%s' % (URL, camera_id)
@@ -360,7 +360,6 @@ def detect(opt):
                                     [P4X, P4Y],
                                 ]
                             )
-                            # XY座標の記録。Y座標は原点調整のために720-Y
                             id_out = int(math.floor(id))
                             X_out= int(math.floor(output[0]))
                             Y_out= 720 - int(math.floor(output[1]))
@@ -464,6 +463,7 @@ def detect(opt):
                                 "violation_list" : violation_lis
                             }
                             r = requests.post(url, json=item_data)
+
                             print("新規違反リスト")
                             print(violation_lis)
 
