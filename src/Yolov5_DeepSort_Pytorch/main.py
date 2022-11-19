@@ -496,10 +496,8 @@ def detect(opt):
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
                 # メンテナンス後は10回検出を行い画像を出力して修復処理を行う、その後平常処理に移行
-                if server_condition == 'false':
-                    if time_count >= 3:  
-                        print("平常時")
-                else:
+                if server_condition == 'true':
+                    # time.sleep(30)
                     if time_count >= 10:  
                         server_condition = 'false'
                         fix(camera_id)
