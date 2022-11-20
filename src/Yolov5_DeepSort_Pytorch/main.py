@@ -98,6 +98,33 @@ def time_cycle(count_cycle):
     else:
         return False
 
+# ラベルの取得
+def label_get(camera_id, labels):
+    url = '%s/api/get_label/%s' % (URL, camera_id)
+    r = requests.get(url)
+    label_lis = r.json() 
+    
+    if label_lis:
+        json_load = json.loads(label_lis[0]['labels_json'])    
+    else:
+        json_load =[{
+            "label_mark" : "None",
+            "label_point1X" : 0,
+            "label_point1Y" : 0,
+            "label_point2X" : 0,
+            "label_point2Y" : 720,
+            "label_point3X" : 1280,
+            "label_point3Y" : 720,
+            "label_point4X" : 1280,
+            "label_point4Y" : 0,
+        }] 
+    
+    for i in range(len(json_load)):
+        label_ap = [json_load[i]["label_mark"],json_load[i]["label_point1X"],json_load[i]["label_point1Y"],json_load[i]["label_point2X"],json_load[i]["label_point2Y"],json_load[i]["label_point3X"],json_load[i]["label_point3Y"],json_load[i]["label_point4X"],json_load[i]["label_point4Y"]]
+        labels.append(label_ap)
+
+    return labels
+
 # 検出範囲のポリゴン生成を生成してクエリ用データを作成
 def label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id, camera_id, request_lis, tracking_lis, server_condition, bboxes, imc):
     label_name = labels[poly][0]
@@ -238,6 +265,7 @@ def detect(opt):
     update_cycle = False
     count_cycle = 0
     time_count = 0
+    labels = []
     id_collect = []
     id_all_lis = []
     bicycle_lis = []
@@ -251,30 +279,8 @@ def detect(opt):
     server_condition = r.json() 
     server_condition = server_condition['condition']
 
-    # ラベリングの配列
-    url = '%s/api/get_label/%s' % (URL, camera_id)
-    r = requests.get(url)
-    label_lis = r.json() 
-    
-    labels=[]
-    if label_lis:
-        json_load = json.loads(label_lis[0]['labels_json'])    
-    else:
-        json_load =[{
-            "label_mark" : "None",
-            "label_point1X" : 0,
-            "label_point1Y" : 0,
-            "label_point2X" : 0,
-            "label_point2Y" : 720,
-            "label_point3X" : 1280,
-            "label_point3Y" : 720,
-            "label_point4X" : 1280,
-            "label_point4Y" : 0,
-        }] 
-    
-    for i1 in range(len(json_load)):
-        label_ap = [json_load[i1]["label_mark"],json_load[i1]["label_point1X"],json_load[i1]["label_point1Y"],json_load[i1]["label_point2X"],json_load[i1]["label_point2Y"],json_load[i1]["label_point3X"],json_load[i1]["label_point3Y"],json_load[i1]["label_point4X"],json_load[i1]["label_point4Y"]]
-        labels.append(label_ap)
+    # ラベルの取得
+    label_get(camera_id, labels)
 
     out, source, yolo_model, deep_sort_model, show_vid, save_vid, save_txt, imgsz, evaluate, half, \
         project, exist_ok, update, save_crop = \
