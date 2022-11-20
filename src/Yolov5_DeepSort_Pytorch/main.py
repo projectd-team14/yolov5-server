@@ -47,6 +47,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 URL = os.environ['LARAVEL_URL']
+UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
 
 # メンテナンス後の処理(トリミング画像の類似度を比較してYOLOv5用のIDを更新する)
 def fix(camera_id):
@@ -90,10 +91,24 @@ def stop(camera_id):
 
 # 定期実行、DBの情報を更新するタイミングを決める
 def time_cycle(count_cycle):
-    if count_cycle > 5:
+    if count_cycle >= UPDATE_CYCLE:
         return True
     else:
         return False
+
+# トラッキングデータをもとに定期更新        
+def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
+    for i in range(count_cycle):
+        for i2 in range(len(tracking_average_lis[i])):
+            if not [tracking_average_lis[i][i2], 0] in id_all_lis:
+                id_all_lis.append([tracking_average_lis[i][i2], 0])
+
+    for i3 in range(len(id_all_lis)):
+        count_tracking = sum(tracking_average_lis, []).count(id_all_lis[i3][0])
+        if (count_cycle / 2) >= count_tracking:
+            id_all_lis[i3][1] = 1
+            
+    return id_all_lis
 
 # 検出
 def detect(opt):
@@ -121,7 +136,9 @@ def detect(opt):
     count_cycle = 0
     time_count = 0
     id_collect = []
+    id_all_lis = []
     bicycle_lis = []
+    tracking_average_lis = [[], []]
     delete = './bicycle_imgs/%s/' % camera_id
 
     # メンテナンス後かどうかの判定
@@ -291,6 +308,7 @@ def detect(opt):
             annotator = Annotator(im0, line_width=2, pil=not ascii)
 
             if det is not None and len(det):
+                count_cycle = count_cycle + 1
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
                 
@@ -469,23 +487,30 @@ def detect(opt):
 
                     print('トラッキングリスト')
                     print(tracking_lis) 
-                    
+
+                    tracking_average_lis.append(tracking_lis)    
+                    if count_cycle >= UPDATE_CYCLE:
+                        tracking_update(id_all_lis, count_cycle, tracking_average_lis)
+                        tracking_average_lis.clear()
+           
                 print('DB更新リスト')
                 print(id_collect)
 
                 if server_condition == 'false':
                     if update_cycle:
-                        url = '%s/api/get_id/%s' % (URL, camera_id)
-                        r = requests.get(url)
-                        last_lis = r.json()
                         delete_lis = []
-
-                        for i5 in range(len(last_lis)):
-                            if not last_lis[i5] in id_collect:
-                                delete_lis.append(last_lis[i5])
-                                trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, last_lis[i5])
+                        for i6 in range(len(id_all_lis)):
+                            if id_all_lis[i6][1] == 1:
+                                delete_lis.append(id_all_lis[i6][0])
+                                trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id_all_lis[i6][0]))
                                 if os.path.exists(str(trimming_path)):
                                     os.remove(trimming_path)
+           
+                        for i7 in range(len(id_all_lis)):
+                            id_reload = []
+                            if id_all_lis[i7][1] == 1:
+                                id_reload.append(id_all_lis[i7])
+                        id_all_lis = id_reload
 
                         url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
                         item_data = {
@@ -503,7 +528,6 @@ def detect(opt):
                         fix(camera_id)
                 
                 # DBの更新タイミングを調整、戻り値がTrueの場合に基盤サーバーにリクエストを送る
-                count_cycle = count_cycle + 1
                 update_cycle = time_cycle(count_cycle)
                 if update_cycle:
                     count_cycle = 0
