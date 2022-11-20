@@ -313,7 +313,7 @@ def detect(opt):
     # 設定時間の取得
     get_time(camera_id)
 
-    # メンテナンス後かどうかの判定
+    # メンテナンス後の判定
     server_condition = get_server(camera_id)
 
     # ラベルの取得
