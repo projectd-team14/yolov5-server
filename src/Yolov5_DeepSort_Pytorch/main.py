@@ -51,6 +51,16 @@ TIME_SLEEP = int(os.environ['TIME_SLEEP'])
 UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
 MAINTENANCE_COUNT = int(os.environ['MAINTENANCE_COUNT'])
 
+# 設定時間を取得
+def get_time(camera_id):
+    url = '%s/api/over_time/%s' % (URL, camera_id)
+    r = requests.get(url)
+    id_lis = r.json() 
+    spots_id = id_lis[0]['spots_id']
+    spots_time = id_lis[0]['spots_over_time']
+
+    return spots_id, spots_time 
+
 # サーバーの状態を判定
 def get_server(camera_id):
     url = '%s/api/server_condition/%s' % (URL, camera_id)
@@ -220,7 +230,7 @@ def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
     return id_all_lis
 
 # クエリ作成用データを基盤サーバーに送る、違反車両の更新
-def bicycle_query(camera_id, request_lis, spots_time, id_collect, violation_lis):
+def post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis):
     url = '%s/api/bicycle_update' % URL
     item_data = request_lis
     r = requests.post(url, json=item_data)
@@ -249,6 +259,27 @@ def bicycle_query(camera_id, request_lis, spots_time, id_collect, violation_lis)
 
     return id_collect
 
+def post_delete(camera_id, id_all_lis):
+    delete_lis = []
+    for i in range(len(id_all_lis)):
+        if id_all_lis[i][1] == 1:
+            delete_lis.append(id_all_lis[i][0])
+            trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id_all_lis[i][0]))
+            if os.path.exists(str(trimming_path)):
+                os.remove(trimming_path)
+
+    for i in range(len(id_all_lis)):
+        id_reload = []
+        if id_all_lis[i][1] == 1:
+            id_reload.append(id_all_lis[i])
+    id_all_lis = id_reload
+
+    url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
+    item_data = {
+        "delete_list" : delete_lis
+    }
+    requests.post(url, json=item_data)
+
 # 検出
 def detect(opt):
     parser = argparse.ArgumentParser()  
@@ -263,14 +294,10 @@ def detect(opt):
 
     camera_id = args.camera_id
     camera_id = int(camera_id)
-    # 設定時間
-    url = '%s/api/over_time/%s' % (URL, camera_id)
-    r = requests.get(url)
-    id_lis = r.json() 
-    spots_id = id_lis[0]['spots_id']
-    spots_time = id_lis[0]['spots_over_time'] 
 
     # 計測時間記録用
+    spots_id = 0
+    spots_time = 0
     update_cycle = False
     count_cycle = 0
     time_count = 0
@@ -281,6 +308,9 @@ def detect(opt):
     tracking_lis = []
     tracking_average_lis = []
     delete = './bicycle_imgs/%s/' % camera_id
+
+    # 設定時間の取得
+    get_time(camera_id)
 
     # メンテナンス後かどうかの判定
     server_condition = get_server(camera_id)
@@ -503,7 +533,7 @@ def detect(opt):
                     # クエリ作成用データを基盤サーバーに送る、違反車両の更新
                     if server_condition == 'true':
                         if update_cycle:
-                            bicycle_query(camera_id, request_lis, spots_time, id_collect, violation_lis)
+                            post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis)
                     
                 # トラッキングリスト
                 print(tracking_average_lis)  
@@ -515,25 +545,7 @@ def detect(opt):
 
                 if server_condition == 'true':
                     if update_cycle:
-                        delete_lis = []
-                        for i6 in range(len(id_all_lis)):
-                            if id_all_lis[i6][1] == 1:
-                                delete_lis.append(id_all_lis[i6][0])
-                                trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id_all_lis[i6][0]))
-                                if os.path.exists(str(trimming_path)):
-                                    os.remove(trimming_path)
-           
-                        for i7 in range(len(id_all_lis)):
-                            id_reload = []
-                            if id_all_lis[i7][1] == 1:
-                                id_reload.append(id_all_lis[i7])
-                        id_all_lis = id_reload
-
-                        url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
-                        item_data = {
-                            "delete_list" : delete_lis
-                        }
-                        r = requests.post(url, json=item_data)
+                        post_delete(camera_id, id_all_lis)
 
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
