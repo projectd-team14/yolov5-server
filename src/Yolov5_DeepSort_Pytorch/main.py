@@ -280,7 +280,7 @@ def detect(opt):
         # Process detections
         for i, det in enumerate(pred):  # detections per image
             # 停止ボタンによる処理
-            if server_condition == 'false':
+            if server_condition == 'true':
                 if update_cycle:
                     stop(camera_id)
 
@@ -323,13 +323,13 @@ def detect(opt):
                     a = f"{n_1} "#{'A'}{'s' * (n_1 > 1)}, "
                     cv2.putText(im0, "Bicycle : " + str(a), (20, 50), 0, 0, (71, 99, 255), 3)
                     # 自転車の混雑度を更新
-                    if server_condition == 'false':
+                    if server_condition == 'true':
                         if update_cycle:
                             url = '%s/api/get_camera_count/%s/%s' % (URL, camera_id, a)
                             r = requests.get(url)
 
                     # 停止ボタンによる処理
-                    if server_condition == 'false':
+                    if server_condition == 'true':
                         if update_cycle:
                             stop(camera_id)
                     
@@ -346,7 +346,7 @@ def detect(opt):
                 # draw boxes for visualization
                 if len(outputs[i]) > 0:
                     # 自転車の固有IDを検索
-                    if server_condition == 'false':
+                    if server_condition == 'true':
                         if update_cycle:
                             url = '%s/api/get_id/%s' % (URL, camera_id)
                             r = requests.get(url)
@@ -414,7 +414,7 @@ def detect(opt):
                                     tracking_lis.append(id)
 
                                 # 画像を保存
-                                if server_condition == 'false':
+                                if server_condition == 'true':
                                     is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
                                     if not is_file:
                                         txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
@@ -451,7 +451,7 @@ def detect(opt):
                             '''
 
                     # APIの処理
-                    if server_condition == 'false':
+                    if server_condition == 'true':
                         if update_cycle:
                             # print(request_lis)
                             url = '%s/api/bicycle_update' % URL
@@ -491,7 +491,7 @@ def detect(opt):
                     tracking_update(id_all_lis, count_cycle, tracking_average_lis)
                     tracking_average_lis.clear()
 
-                if server_condition == 'false':
+                if server_condition == 'true':
                     if update_cycle:
                         delete_lis = []
                         for i6 in range(len(id_all_lis)):
@@ -516,10 +516,10 @@ def detect(opt):
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
                 # メンテナンス後は10回検出を行い画像を出力して修復処理を行う、その後平常処理に移行
-                if server_condition == 'true':
+                if server_condition == 'false':
                     # time.sleep(30)
                     if time_count >= MAINTENANCE_COUNT:  
-                        server_condition = 'false'
+                        server_condition = 'true'
                         fix(camera_id)
                 
                 # DBの更新タイミングを調整、戻り値がTrueの場合に基盤サーバーにリクエストを送る
@@ -528,7 +528,7 @@ def detect(opt):
                     count_cycle = 0
 
                 bicycle_lis.clear()
-                if server_condition == 'false':
+                if server_condition == 'true':
                     id_collect.clear()
 
             else:
