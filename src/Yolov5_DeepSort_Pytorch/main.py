@@ -51,6 +51,15 @@ TIME_SLEEP = int(os.environ['TIME_SLEEP'])
 UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
 MAINTENANCE_COUNT = int(os.environ['MAINTENANCE_COUNT'])
 
+# サーバーの状態を判定
+def get_server(camera_id):
+    url = '%s/api/server_condition/%s' % (URL, camera_id)
+    r = requests.get(url)
+    server_condition = r.json() 
+    server_condition = server_condition['condition']
+
+    return server_condition
+
 # メンテナンス後の処理(トリミング画像の類似度を比較してYOLOv5用のIDを更新する)
 def fix(camera_id):
     bicycle_ex_lis = []
@@ -99,7 +108,7 @@ def time_cycle(count_cycle):
         return False
 
 # ラベルの取得
-def label_get(camera_id, labels):
+def get_label(camera_id, labels):
     url = '%s/api/get_label/%s' % (URL, camera_id)
     r = requests.get(url)
     label_lis = r.json() 
@@ -274,13 +283,10 @@ def detect(opt):
     delete = './bicycle_imgs/%s/' % camera_id
 
     # メンテナンス後かどうかの判定
-    url = '%s/api/server_condition/%s' % (URL, camera_id)
-    r = requests.get(url)
-    server_condition = r.json() 
-    server_condition = server_condition['condition']
+    server_condition = get_server(camera_id)
 
     # ラベルの取得
-    label_get(camera_id, labels)
+    get_label(camera_id, labels)
 
     out, source, yolo_model, deep_sort_model, show_vid, save_vid, save_txt, imgsz, evaluate, half, \
         project, exist_ok, update, save_crop = \
