@@ -51,16 +51,6 @@ TIME_SLEEP = int(os.environ['TIME_SLEEP'])
 UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
 MAINTENANCE_COUNT = int(os.environ['MAINTENANCE_COUNT'])
 
-# 設定時間を取得
-def get_time(camera_id):
-    url = '%s/api/over_time/%s' % (URL, camera_id)
-    r = requests.get(url)
-    id_lis = r.json() 
-    spots_id = id_lis[0]['spots_id']
-    spots_time = id_lis[0]['spots_over_time']
-
-    return spots_id, spots_time 
-
 # サーバーの状態を判定
 def get_server(camera_id):
     url = '%s/api/server_condition/%s' % (URL, camera_id)
@@ -311,7 +301,11 @@ def detect(opt):
     delete = './bicycle_imgs/%s/' % camera_id
 
     # 設定時間の取得
-    get_time(camera_id)
+    url = '%s/api/over_time/%s' % (URL, camera_id)
+    r = requests.get(url)
+    id_lis = r.json() 
+    spots_id = id_lis[0]['spots_id']
+    spots_time = id_lis[0]['spots_over_time']
 
     # メンテナンス後の判定
     server_condition = get_server(camera_id)
