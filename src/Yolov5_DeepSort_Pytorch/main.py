@@ -111,6 +111,36 @@ def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
             
     return id_all_lis
 
+# クエリ作成用データを基盤サーバーに送る、違反車両の更新
+def bicycle_query(camera_id, request_lis, spots_time, id_collect, violation_lis):
+    url = '%s/api/bicycle_update' % URL
+    item_data = request_lis
+    r = requests.post(url, json=item_data)
+    response_lis = r.json()
+
+    for i in range(len(response_lis)):
+        out_time = spots_time
+        up = response_lis[i]['updated_at']
+        cr = response_lis[i]['created_at']
+        updated_at = datetime.datetime.fromisoformat(up[:-1])
+        created_at = datetime.datetime.fromisoformat(cr[:-1])
+        time_dif = updated_at - created_at
+        time_total = time_dif.total_seconds() 
+        id_collect.append(response_lis[i]['get_id'])
+        
+        if time_total >= out_time:
+            if response_lis[i]['bicycles_status'] == "None" or response_lis[i]['bicycles_status'] == "無効":
+                violation_lis.append(response_lis[i]['get_id'])
+
+    url = '%s/api/bicycle_violation' % URL
+    item_data = {
+        "camera_id" : camera_id,
+        "violation_list" : violation_lis
+    }
+    r = requests.post(url, json=item_data)
+
+    return id_collect
+
 # 検出
 def detect(opt):
     parser = argparse.ArgumentParser()  
@@ -454,35 +484,7 @@ def detect(opt):
                     # APIの処理
                     if server_condition == 'true':
                         if update_cycle:
-                            # print(request_lis)
-                            url = '%s/api/bicycle_update' % URL
-                            item_data = request_lis
-                            r = requests.post(url, json=item_data)
-                            response_lis = r.json()
-
-                            # APIから得られたステータスから違反リストを生成する
-                            for i2 in range(len(response_lis)):
-                                out_time = spots_time
-                                up = response_lis[i2]['updated_at']
-                                cr = response_lis[i2]['created_at']
-                                updated_at = datetime.datetime.fromisoformat(up[:-1])
-                                created_at = datetime.datetime.fromisoformat(cr[:-1])
-                                time_dif = updated_at - created_at
-                                time_total = time_dif.total_seconds() 
-                                id_collect.append(response_lis[i2]['get_id'])
-                                
-                                # 現在存在する自転車（ID）のみ違反車両にする
-                                if time_total >= out_time:
-                                    if response_lis[i2]['bicycles_status'] == "None" or response_lis[i2]['bicycles_status'] == "無効":
-                                        violation_lis.append(response_lis[i2]['get_id'])
-
-                            # 違反車両を更新  
-                            url = '%s/api/bicycle_violation' % URL
-                            item_data = {
-                                "camera_id" : camera_id,
-                                "violation_list" : violation_lis
-                            }
-                            r = requests.post(url, json=item_data)
+                            bicycle_query(camera_id, request_lis, spots_time, id_collect, violation_lis)
                     
                 # トラッキングリスト
                 print(tracking_average_lis)  
