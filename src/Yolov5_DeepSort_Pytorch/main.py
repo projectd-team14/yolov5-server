@@ -73,7 +73,7 @@ def fix(camera_id):
 
     url = '%s/api/server_update/%s' % (URL, camera_id)
     item_data = bicycle_ex_lis
-    r = requests.post(url, json=item_data)
+    requests.post(url, json=item_data)
     shutil.rmtree(fix_path)
     shutil.rmtree(old_path)
 
