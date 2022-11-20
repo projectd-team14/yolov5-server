@@ -349,8 +349,7 @@ def detect(opt):
                             url = '%s/api/get_id/%s' % (URL, camera_id)
                             r = requests.get(url)
                             bicycle_lis = r.json()
-                            print(bicycle_lis)
-
+                            
                     violation_lis = []
                     request_lis = []
                     tracking_lis = []
@@ -482,19 +481,13 @@ def detect(opt):
                             }
                             r = requests.post(url, json=item_data)
 
-                            print("新規違反リスト")
-                            print(violation_lis)
-
-                    print('トラッキングリスト')
+                    # トラッキングリスト
                     print(tracking_lis) 
 
                     tracking_average_lis.append(tracking_lis)    
                     if count_cycle >= UPDATE_CYCLE:
                         tracking_update(id_all_lis, count_cycle, tracking_average_lis)
                         tracking_average_lis.clear()
-           
-                print('DB更新リスト')
-                print(id_collect)
 
                 if server_condition == 'false':
                     if update_cycle:
