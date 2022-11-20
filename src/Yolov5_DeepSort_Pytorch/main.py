@@ -415,12 +415,13 @@ def detect(opt):
 
                                 # 画像を保存
                                 if server_condition == 'true':
-                                    is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
-                                    if not is_file:
-                                        txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
-                                        file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
-                                        # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
-                                        save_one_box(bboxes, imc, file_path, BGR=True)
+                                    if update_cycle:
+                                        is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
+                                        if not is_file:
+                                            txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
+                                            file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
+                                            # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
+                                            save_one_box(bboxes, imc, file_path, BGR=True)
                                 else:
                                     is_file = os.path.exists("./bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id)))
                                     if not is_file:
