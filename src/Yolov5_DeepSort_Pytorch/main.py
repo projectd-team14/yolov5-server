@@ -98,6 +98,77 @@ def time_cycle(count_cycle):
     else:
         return False
 
+# 検出範囲のポリゴン生成を生成してクエリ用データを作成
+def label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id, camera_id, request_lis, tracking_lis, server_condition, bboxes, imc):
+    label_name = labels[poly][0]
+    P1X = labels[poly][1]
+    P1Y = labels[poly][2]
+    P2X = labels[poly][3]
+    P2Y = labels[poly][4]
+    P3X = labels[poly][5]
+    P3Y = labels[poly][6]
+    P4X = labels[poly][7]
+    P4Y = labels[poly][8]
+    polygon = path.Path(
+        [
+            [P1X, P1Y],
+            [P2X, P2Y],
+            [P3X, P3Y],
+            [P4X, P4Y],
+        ]
+    )
+    id_out = int(math.floor(id))
+    X_out= int(math.floor(output[0]))
+    Y_out= 720 - int(math.floor(output[1]))
+    XY_out = polygon.contains_point([X_out, Y_out])
+
+    if XY_out:
+        if update_cycle:
+            if not id in bicycle_lis:
+                item_data = {
+                    "type" : "insert",
+                    "spots_id" : spots_id,
+                    "cameras_id" : camera_id,
+                    "labels_name" : label_name, 
+                    "get_id" : id_out,
+                    "bicycles_x_coordinate" : X_out,
+                    "bicycles_y_coordinate" : Y_out,
+                }
+                request_lis.append(item_data)
+            elif id in bicycle_lis:
+                item_data = {
+                    "type" : "update",
+                    "spots_id" : spots_id,
+                    "cameras_id" : camera_id,
+                    "labels_name" : label_name, 
+                    "get_id" : id_out,
+                    "bicycles_x_coordinate" : X_out,
+                    "bicycles_y_coordinate" : Y_out,
+                }
+                request_lis.append(item_data)
+
+        if not id in tracking_lis:
+            tracking_lis.append(id)
+
+        # 画像を保存
+        if server_condition == 'true':
+            if update_cycle:
+                is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
+                if not is_file:
+                    txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
+                    file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
+                    # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
+                    save_one_box(bboxes, imc, file_path, BGR=True)
+        else:
+            is_file = os.path.exists("./bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id)))
+            if not is_file:
+                txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
+                file_path = Path("./bicycle_imgs_fix/") / str(camera_id) / f'{int(id)}.jpg'
+                # file_path_json = "bicycle_imgs_fix/%s/%s" % (id_str,jpg)
+                save_one_box(bboxes, imc, file_path, BGR=True)
+
+    return label_name, id_out, X_out, Y_out, XY_out, request_lis, tracking_lis
+
 # トラッキングデータをもとに定期更新        
 def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
     for i in range(count_cycle):
@@ -392,74 +463,9 @@ def detect(opt):
                         id = output[4]
                         cls = output[5]
                         conf = output[6]
-                        for il in range(len(labels)):
-                            label_name = labels[il][0]
-                            P1X = labels[il][1]
-                            P1Y = labels[il][2]
-                            P2X = labels[il][3]
-                            P2Y = labels[il][4]
-                            P3X = labels[il][5]
-                            P3Y = labels[il][6]
-                            P4X = labels[il][7]
-                            P4Y = labels[il][8]
-                            polygon = path.Path(
-                                [
-                                    [P1X, P1Y],
-                                    [P2X, P2Y],
-                                    [P3X, P3Y],
-                                    [P4X, P4Y],
-                                ]
-                            )
-                            id_out = int(math.floor(id))
-                            X_out= int(math.floor(output[0]))
-                            Y_out= 720 - int(math.floor(output[1]))
-                            XY_out = polygon.contains_point([X_out, Y_out])
-
-                            if XY_out:
-                                if update_cycle:
-                                    # リクエスト内容を作成
-                                    if not id in bicycle_lis:
-                                        item_data = {
-                                            "type" : "insert",
-                                            "spots_id" : spots_id,
-                                            "cameras_id" : camera_id,
-                                            "labels_name" : label_name, 
-                                            "get_id" : id_out,
-                                            "bicycles_x_coordinate" : X_out,
-                                            "bicycles_y_coordinate" : Y_out,
-                                        }
-                                        request_lis.append(item_data)
-                                    elif id in bicycle_lis:
-                                        item_data = {
-                                            "type" : "update",
-                                            "spots_id" : spots_id,
-                                            "cameras_id" : camera_id,
-                                            "labels_name" : label_name, 
-                                            "get_id" : id_out,
-                                            "bicycles_x_coordinate" : X_out,
-                                            "bicycles_y_coordinate" : Y_out,
-                                        }
-                                        request_lis.append(item_data)
-                                
-                                if not id in tracking_lis:
-                                    tracking_lis.append(id)
-
-                                # 画像を保存
-                                if server_condition == 'true':
-                                    if update_cycle:
-                                        is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
-                                        if not is_file:
-                                            txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
-                                            file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
-                                            # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
-                                            save_one_box(bboxes, imc, file_path, BGR=True)
-                                else:
-                                    is_file = os.path.exists("./bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id)))
-                                    if not is_file:
-                                        txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
-                                        file_path = Path("./bicycle_imgs_fix/") / str(camera_id) / f'{int(id)}.jpg'
-                                        # file_path_json = "bicycle_imgs_fix/%s/%s" % (id_str,jpg)
-                                        save_one_box(bboxes, imc, file_path, BGR=True)
+                        for poly in range(len(labels)):
+                            # 検出範囲のポリゴン生成を生成してクエリ用データを作成
+                            label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id, camera_id, request_lis, tracking_lis, server_condition, bboxes, imc)
 
                         if save_txt:
                             # to MOT format
