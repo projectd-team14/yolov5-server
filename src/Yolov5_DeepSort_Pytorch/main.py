@@ -48,6 +48,7 @@ load_dotenv()
 
 URL = os.environ['LARAVEL_URL']
 UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
+MAINTENANCE_COUNT = int(os.environ['MAINTENANCE_COUNT'])
 
 # メンテナンス後の処理(トリミング画像の類似度を比較してYOLOv5用のIDを更新する)
 def fix(camera_id):
@@ -138,7 +139,8 @@ def detect(opt):
     id_collect = []
     id_all_lis = []
     bicycle_lis = []
-    tracking_average_lis = [[], []]
+    tracking_lis = []
+    tracking_average_lis = []
     delete = './bicycle_imgs/%s/' % camera_id
 
     # メンテナンス後かどうかの判定
@@ -480,14 +482,14 @@ def detect(opt):
                                 "violation_list" : violation_lis
                             }
                             r = requests.post(url, json=item_data)
+                    
+                # トラッキングリスト
+                print(tracking_average_lis)  
 
-                    # トラッキングリスト
-                    print(tracking_lis) 
-
-                    tracking_average_lis.append(tracking_lis)    
-                    if count_cycle >= UPDATE_CYCLE:
-                        tracking_update(id_all_lis, count_cycle, tracking_average_lis)
-                        tracking_average_lis.clear()
+                tracking_average_lis.append(tracking_lis)
+                if count_cycle >= UPDATE_CYCLE:
+                    tracking_update(id_all_lis, count_cycle, tracking_average_lis)
+                    tracking_average_lis.clear()
 
                 if server_condition == 'false':
                     if update_cycle:
@@ -516,7 +518,7 @@ def detect(opt):
                 # メンテナンス後は10回検出を行い画像を出力して修復処理を行う、その後平常処理に移行
                 if server_condition == 'true':
                     # time.sleep(30)
-                    if time_count >= 10:  
+                    if time_count >= MAINTENANCE_COUNT:  
                         server_condition = 'false'
                         fix(camera_id)
                 
