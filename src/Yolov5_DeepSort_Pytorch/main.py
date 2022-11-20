@@ -47,6 +47,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 URL = os.environ['LARAVEL_URL']
+TIME_SLEEP = int(os.environ['TIME_SLEEP'])
 UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
 MAINTENANCE_COUNT = int(os.environ['MAINTENANCE_COUNT'])
 
@@ -481,7 +482,7 @@ def detect(opt):
                                 save_one_box(bboxes, imc, file=save_imgs / 'crops' / txt_file_name / names[c] / f'{id}' / f'{p.stem}.jpg', BGR=True)                            
                             '''
 
-                    # APIの処理
+                    # クエリ作成用データを基盤サーバーに送る、違反車両の更新
                     if server_condition == 'true':
                         if update_cycle:
                             bicycle_query(camera_id, request_lis, spots_time, id_collect, violation_lis)
@@ -518,9 +519,9 @@ def detect(opt):
 
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
-                # メンテナンス後は10回検出を行い画像を出力して修復処理を行う、その後平常処理に移行
+                # メンテナンス後の処理(トリミング画像の類似度を比較してYOLOv5用のIDを更新する)
                 if server_condition == 'false':
-                    # time.sleep(30)
+                    time.sleep(TIME_SLEEP)
                     if time_count >= MAINTENANCE_COUNT:  
                         server_condition = 'true'
                         fix(camera_id)
