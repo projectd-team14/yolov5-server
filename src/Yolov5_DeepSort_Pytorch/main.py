@@ -259,6 +259,7 @@ def post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis):
 
     return id_collect
 
+# 自転車の削除
 def post_delete(camera_id, id_all_lis):
     delete_lis = []
     for i in range(len(id_all_lis)):
@@ -543,6 +544,7 @@ def detect(opt):
                     tracking_update(id_all_lis, count_cycle, tracking_average_lis)
                     tracking_average_lis.clear()
 
+                # 自転車の削除    
                 if server_condition == 'true':
                     if update_cycle:
                         post_delete(camera_id, id_all_lis)
