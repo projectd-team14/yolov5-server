@@ -306,6 +306,7 @@ def detect(opt):
     id_lis = r.json() 
     spots_id = id_lis[0]['spots_id']
     spots_time = id_lis[0]['spots_over_time']
+    spots_status = id_lis[0]['spots_status']
 
     # メンテナンス後の判定
     server_condition = get_server(camera_id)
@@ -457,14 +458,34 @@ def detect(opt):
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                    # Print counter
+                    
+                    # 自転車(bicycle)
                     n_1 = (det[:, -1] == 0).sum()
-                    a = f"{n_1} "#{'A'}{'s' * (n_1 > 1)}, "
-                    cv2.putText(im0, "Bicycle : " + str(a), (20, 50), 0, 0, (71, 99, 255), 3)
+                    bicycle = f"{n_1} "#{'A'}{'s' * (n_1 > 1)}, "
+
+                    # 自動車(car)
+                    n_2 = (det[:, -1] == 1).sum()
+                    car = f"{n_2} "#{'A'}{'s' * (n_1 > 1)}, "
+
+                    # バイク(motorcycles)
+                    n_3 = (det[:, -1] == 2).sum()
+                    motorcycles = f"{n_1} "#{'A'}{'s' * (n_1 > 1)}, "
+
+                    count_status = 0
+
+                    if spots_status == 1:
+                        count_status = bicycle
+                    elif spots_status == 2:
+                        count_status = motorcycles
+                    elif count_status == 3:
+                        count_status = bicycle + motorcycles
+                    else:
+                        count_status = bicycle
+
                     # 自転車の混雑度を更新
                     if server_condition == 'true':
                         if update_cycle:
-                            url = '%s/api/get_camera_count/%s/%s' % (URL, camera_id, a)
+                            url = '%s/api/get_camera_count/%s/%s' % (URL, camera_id, count_status)
                             r = requests.get(url)
 
                     # 停止ボタンによる処理

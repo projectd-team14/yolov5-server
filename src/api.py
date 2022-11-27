@@ -19,7 +19,7 @@ async def root(id: int = 0, status: int = 0):
     url = '%s/api/get_url/%s' % (URL, id)
     r = requests.get(url)
     camera_url = r.json() 
-    subprocess.Popen('python ./Yolov5_DeepSort_Pytorch/main.py --save-crop --source "%s" --camera_id %s --yolo_model ./Yolov5_DeepSort_Pytorch/model_weight/best.pt' % (camera_url[0]['cameras_url'], int(id)), shell=True)
+    subprocess.Popen('python ./Yolov5_DeepSort_Pytorch/main.py --save-crop --source "%s" --camera_id %s --yolo_model ./Yolov5_DeepSort_Pytorch/model_weight/dataset_all_01/best.pt' % (camera_url[0]['cameras_url'], int(id)), shell=True)
         
 # ラベル付け設定
 @app.get("/label/")
