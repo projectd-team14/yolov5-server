@@ -155,7 +155,7 @@ def label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id,
     )
     id_out = int(math.floor(id))
     X_out= int(math.floor(output[0]))
-    Y_out= 720 - int(math.floor(output[1]))
+    Y_out= int(math.floor(output[1]))
     XY_out = polygon.contains_point([X_out, Y_out])
 
     if XY_out:
@@ -205,20 +205,6 @@ def label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id,
 
     return label_name, id_out, X_out, Y_out, XY_out, request_lis, tracking_lis
 
-# トラッキングデータをもとに定期更新        
-def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
-    for i in range(count_cycle):
-        for i2 in range(len(tracking_average_lis[i])):
-            if not [tracking_average_lis[i][i2], 0] in id_all_lis:
-                id_all_lis.append([tracking_average_lis[i][i2], 0])
-
-    for i3 in range(len(id_all_lis)):
-        count_tracking = sum(tracking_average_lis, []).count(id_all_lis[i3][0])
-        if (count_cycle / 2) >= count_tracking:
-            id_all_lis[i3][1] = 1
-            
-    return id_all_lis
-
 # クエリ作成用データを基盤サーバーに送る、違反車両の更新
 def post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis):
     url = '%s/api/bicycle_update' % URL
@@ -249,6 +235,26 @@ def post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis):
 
     return id_collect
 
+# トラッキングデータをもとに定期更新        
+def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
+    for i in range(count_cycle):
+        for i2 in range(len(tracking_average_lis[i])):
+            if not [tracking_average_lis[i][i2], 0] in id_all_lis:
+                id_all_lis.append([tracking_average_lis[i][i2], 0])
+    
+    print('トラッキング中のリスト')
+    print(id_all_lis)
+    print('過去データ')
+    print(tracking_average_lis)
+    
+    for i3 in range(len(id_all_lis)):
+        count_tracking = sum(tracking_average_lis, []).count(id_all_lis[i3][0])
+        print(str(id_all_lis[i3][0]) + 'は出現回数' + str(count_tracking) + 'です')
+        if (count_cycle / 2) >= count_tracking:
+            id_all_lis[i3][1] = 1
+            
+    return id_all_lis
+
 # 自転車の削除
 def post_delete(camera_id, id_all_lis):
     delete_lis = []
@@ -258,12 +264,6 @@ def post_delete(camera_id, id_all_lis):
             trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id_all_lis[i][0]))
             if os.path.exists(str(trimming_path)):
                 os.remove(trimming_path)
-
-    for i in range(len(id_all_lis)):
-        id_reload = []
-        if id_all_lis[i][1] == 1:
-            id_reload.append(id_all_lis[i])
-    id_all_lis = id_reload
 
     url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
     item_data = {
@@ -550,9 +550,6 @@ def detect(opt):
                     if server_condition == 'true':
                         if update_cycle:
                             post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis)
-                    
-                # トラッキングリスト
-                print(tracking_average_lis)  
 
                 tracking_average_lis.append(tracking_lis)
                 if count_cycle >= UPDATE_CYCLE:
@@ -563,6 +560,7 @@ def detect(opt):
                 if server_condition == 'true':
                     if update_cycle:
                         post_delete(camera_id, id_all_lis)
+                        id_all_lis.clear()
 
                 LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
                 
