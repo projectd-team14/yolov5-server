@@ -55,9 +55,5 @@ async def bicycle(camera_id: int = 0, bicycle_id: int = 0):
 
 # テスト
 @app.get("/test/")
-async def bicycle():
-    url = '%s/api/get_url/100' % URL
-    r = requests.get(url)
-    camera_url = r.json()
-
-    return camera_url[0]['cameras_url']
+async def test():
+    return 'テスト'
