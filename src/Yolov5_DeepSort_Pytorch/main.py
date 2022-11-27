@@ -246,7 +246,7 @@ def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
     print(id_all_lis)
     print('過去データ')
     print(tracking_average_lis)
-    
+
     for i3 in range(len(id_all_lis)):
         count_tracking = sum(tracking_average_lis, []).count(id_all_lis[i3][0])
         print(str(id_all_lis[i3][0]) + 'は出現回数' + str(count_tracking) + 'です')
@@ -579,6 +579,8 @@ def detect(opt):
                 bicycle_lis.clear()
                 if server_condition == 'true':
                     id_collect.clear()
+                
+                time.sleep(5)
 
             else:
                 deepsort_list[i].increment_ages()
