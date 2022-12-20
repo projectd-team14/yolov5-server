@@ -86,8 +86,3 @@ async def bicycle(camera_id: int = 0, bicycle_id: int = 0):
         body = response['Body'].read()
 
         return Response(content=body, media_type="jpg")
-
-# テスト
-@app.get("/test/")
-async def test():
-    return 'テスト'
