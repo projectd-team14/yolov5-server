@@ -9,6 +9,7 @@ import math
 import sys
 sys.path.insert(0, './yolov5')
 
+import boto3
 import requests
 import json
 import argparse
@@ -46,6 +47,13 @@ import imagehash
 from dotenv import load_dotenv
 load_dotenv()
 
+# S3(本番環境のみ使用)
+BUCKET_NAME=os.environ['BUCKET_NAME']
+ACCESS_KEY = os.environ['ACCESS_KEY']
+SECRET_ACCESS_KEY = os.environ['SECRET_ACCESS_KEY']
+s3 = boto3.client('s3', region_name='ap-northeast-1', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_ACCESS_KEY)
+
+APP_ENV = os.environ['APP_ENV']
 URL = os.environ['LARAVEL_URL']
 TIME_SLEEP = int(os.environ['TIME_SLEEP'])
 UPDATE_CYCLE = int(os.environ['UPDATE_CYCLE'])
@@ -97,7 +105,11 @@ def stop(camera_id):
         url = '%s/api/get_camera_stop/%s' % (URL, camera_id)
         r = requests.get(url)                  
         shutil.rmtree('Yolov5_DeepSort_Pytorch/runs/track/')
-        shutil.rmtree('./bicycle_imgs/%s/' % camera_id)
+        shutil.rmtree('./bicycle_imgs/%s' % camera_id)
+        if not APP_ENV == 'local':
+            s3 = boto3.resource('s3', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_ACCESS_KEY)
+            bucket = s3.Bucket(BUCKET_NAME)
+            bucket.objects.filter(Prefix='bicycle_imgs/%s' % camera_id).delete()
         exit()
 
 # 定期実行、DBの情報を更新するタイミングを決める
@@ -188,14 +200,19 @@ def label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id,
 
         # 画像を保存
         if server_condition == 'true':
+            file_name = 'bicycle_imgs/%s/%s.jpg' % (camera_id, int(id))
             if update_cycle:
-                is_file = os.path.exists("./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id)))
+                is_file = os.path.exists(file_name)
                 if not is_file:
                     txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
                     file_path = Path("./bicycle_imgs/") / str(camera_id) / f'{int(id)}.jpg'
                     # file_path_json = "bicycle_imgs/%s/%s" % (id_str,jpg)
                     save_one_box(bboxes, imc, file_path, BGR=True)
+                    if not APP_ENV == 'local':
+                        s3.upload_file(file_name, BUCKET_NAME, file_name)
+                        os.remove(file_name)
         else:
+            file_name = "bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id))
             is_file = os.path.exists("./bicycle_imgs_fix/%s/%s.jpg" % (camera_id, int(id)))
             if not is_file:
                 txt_file_name = txt_file_name if (isinstance(path, list) and len(path) > 1) else ''
@@ -264,6 +281,9 @@ def post_delete(camera_id, id_all_lis):
             trimming_path = "./bicycle_imgs/%s/%s.jpg" % (camera_id, int(id_all_lis[i][0]))
             if os.path.exists(str(trimming_path)):
                 os.remove(trimming_path)
+                delete_file_path = os.path.join('bicycle_imgs/%s' % camera_id, '%s.jpg' % int(id_all_lis[i][0]))
+                if not APP_ENV == 'local':
+                    s3.delete_object(Bucket=BUCKET_NAME, Key=delete_file_path)
 
     url = '%s/api/bicycle_delete/%s' % (URL, camera_id)
     item_data = {
