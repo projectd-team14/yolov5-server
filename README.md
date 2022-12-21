@@ -1,9 +1,9 @@
 # yolov5-server  
-LaravelのAPIを経由してDBにアクセスするためのAPIサーバー。  
+YOLOv5の推論結果をデータベースに送るためのAPIサーバー。  
 ※このプロジェクトは以下のプロジェクトの環境構築が必要です。  
 ・[bicycle-system(駐輪場管理システム)](https://github.com/projectd-team14/bicycle_system)
 ## 概要  
-このプロジェクトはAWSのGPUインスタンスに設置するYOLOv5専用サーバーです。FastAPIで起動しておりYOLOv5から得られた情報をLaravelのAPIサーバーに送ります。このサーバーはPublic状態になっているためSQLの直書きやセキュリティ対策が必要なデータの保存はできません。
+このプロジェクトはAWSのGPUインスタンスに設置するYOLOv5専用サーバーです。FastAPIで起動しておりYOLOv5から得られた情報をLaravelのAPIサーバーに送ります。
 ## 環境構築
 プロジェクトのclone  
 ```
