@@ -1,7 +1,7 @@
 # yolov5-server  
-LaravelのAPIを経由してDBにアクセスするためのAPIサーバー。  
+YOLOv5の推論結果をBDに送るためのAPIサーバー。  
 ## 概要  
-このリポジトリはHerokuのインスタンスに設置するYOLOv5専用のAPIサーバーです。FastAPIで起動しておりYOLOv5から得られた情報をLaravelのAPIサーバーに送ります。このサーバーはPublic状態になっているためSQLの直書きやセキュリティ対策が必要なデータの保存はできません。
+このリポジトリはHerokuのインスタンスに設置するYOLOv5専用のAPIサーバーです。FastAPIで起動しておりYOLOv5から得られた情報をLaravelのAPIサーバーに送ります。
 ## 環境構築
 プロジェクトのclone  
 ```
