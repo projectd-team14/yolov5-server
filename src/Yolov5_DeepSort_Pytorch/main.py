@@ -258,15 +258,9 @@ def tracking_update(id_all_lis, count_cycle, tracking_average_lis):
         for i2 in range(len(tracking_average_lis[i])):
             if not [tracking_average_lis[i][i2], 0] in id_all_lis:
                 id_all_lis.append([tracking_average_lis[i][i2], 0])
-    
-    print('トラッキング中のリスト')
-    print(id_all_lis)
-    print('過去データ')
-    print(tracking_average_lis)
 
     for i3 in range(len(id_all_lis)):
         count_tracking = sum(tracking_average_lis, []).count(id_all_lis[i3][0])
-        print(str(id_all_lis[i3][0]) + 'は出現回数' + str(count_tracking) + 'です')
         if (count_cycle / 2) >= count_tracking:
             id_all_lis[i3][1] = 1
             
