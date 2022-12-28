@@ -43,3 +43,5 @@ youtube_dl
 datetime
 ImageHash
 python-dotenv
+youtube-dl
+asyncio
