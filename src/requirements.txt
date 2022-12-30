@@ -45,3 +45,4 @@ ImageHash
 python-dotenv
 youtube-dl
 asyncio
+boto3
