@@ -3,3 +3,4 @@
 /src/label_imgs
 
 /src/.env
+/src/__pycache__
