@@ -226,8 +226,11 @@ def label_polygon(id, labels, output, poly, update_cycle, bicycle_lis, spots_id,
 def post_bicycle(camera_id, request_lis, spots_time, id_collect, violation_lis):
     url = '%s/api/bicycle_update' % URL
     item_data = request_lis
-    r = requests.post(url, json=item_data)
-    response_lis = r.json()
+    r = requests.post(url, json=item_data)  
+    try:
+        response_lis = r.json()
+    except Exception:
+        pass
 
     for i in range(len(response_lis)):
         out_time = spots_time
