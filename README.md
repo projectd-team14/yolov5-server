@@ -1,9 +1,9 @@
 # yolov5-server  
-YOLOv5の推論結果をデータベースに送るためのAPIサーバー。  
+YOLOv5を用いた機械学習用インスタンスとFastAPIを用いた画像出力用API。  
 ※このプロジェクトは以下のプロジェクトの環境構築が必要です。  
 ・[bicycle-system(駐輪場管理システム)](https://github.com/projectd-team14/bicycle_system)
 ## 概要  
-このプロジェクトはAWSのGPUインスタンスに設置するYOLOv5専用サーバーです。FastAPIで起動しておりYOLOv5から得られた情報をLaravelのAPIサーバーに送ります。
+このプロジェクトはAWSのGPUインスタンスに設置する機械学習用インスタンスです。また画像出力と機械学習用インスタンスにコマンドを送るためにFastAPIが設置されています。
 ## 環境構築
 プロジェクトのclone  
 ```
