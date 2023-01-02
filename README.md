@@ -1,9 +1,7 @@
 # yolov5-server  
-YOLOv5を用いた機械学習用インスタンスとFastAPIを用いた画像出力用API。  
+このプロジェクトはAWSのGPUインスタンスに設置する機械学習用インスタンスです。また画像出力と機械学習用インスタンスにコマンドを送るためにFastAPIが設置されています。  
 ※このプロジェクトは以下のプロジェクトの環境構築が必要です。  
-・[bicycle-system(駐輪場管理システム)](https://github.com/projectd-team14/bicycle_system)
-## 概要  
-このプロジェクトはAWSのGPUインスタンスに設置する機械学習用インスタンスです。また画像出力と機械学習用インスタンスにコマンドを送るためにFastAPIが設置されています。
+・[bicycle-system(駐輪場管理システム)](https://github.com/projectd-team14/bicycle_system)  
 ## 環境構築
 プロジェクトのclone  
 ```
