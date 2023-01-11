@@ -2,6 +2,7 @@
 このプロジェクトはAWSのGPUインスタンスに設置する機械学習用インスタンスです。画像出力と機械学習用インスタンスにコマンドを送るためにFastAPIが設置されています。  
 ## 環境構築
 ※このプロジェクトは[駐輪場管理業務支援システム](https://github.com/projectd-team14/bicycle-system)の環境構築が必要です。  
+  
 1.プロジェクトのclone  
 ```
 git clone https://github.com/projectd-team14/yolov5-server.git
