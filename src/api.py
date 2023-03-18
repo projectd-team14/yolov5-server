@@ -14,6 +14,7 @@ load_dotenv()
 app = FastAPI()
 URL = os.environ['LARAVEL_URL']
 APP_ENV = os.environ['APP_ENV']
+APP_MODE = os.environ['APP_MODE']
 
 # 本番環境のみ使用
 BUCKET_NAME=os.environ['BUCKET_NAME']
@@ -46,6 +47,9 @@ async def label(id: int = 0):
     camera_url = r.json() 
     dir_path = 'label_imgs'
     ext = 'jpg'
+
+    if APP_MODE == 'dev':
+        return FileResponse('./label_imgs/%s.jpg' % id)
 
     if APP_ENV == 'local':
         if os.path.isfile('./label_imgs/%s.jpg' % id):
