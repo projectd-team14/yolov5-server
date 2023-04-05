@@ -1,7 +1,6 @@
-/src/bicycle_imgs
-/src/bicycle_imgs_fix
-/src/label_imgs
-
-/src/.env
-/src/__pycache__
-/src/config
+/bicycle_imgs
+/bicycle_imgs_fix
+/label_imgs
+/__pycache__
+/config
+.env
